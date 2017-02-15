@@ -13,7 +13,7 @@ class SettingsViewController: UIViewController, UIPickerViewDataSource, UIPicker
     @IBOutlet weak var tipPicker: UIPickerView!
     
     let tipPercentages = ["18%", "20%","25%"]
-    
+ 
     func numberOfComponents(in pickerView: UIPickerView) -> Int{
         return 1
     }

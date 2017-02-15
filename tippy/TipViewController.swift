@@ -15,9 +15,13 @@ class ViewController: UIViewController {
     @IBOutlet weak var billField: UITextField!
     @IBOutlet weak var tipControl: UISegmentedControl!
     
+    @IBOutlet weak var britishTotalLabel: UILabel!
+    @IBOutlet weak var euroTotalLabel: UILabel!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        billField.becomeFirstResponder()
     }
 
     override func didReceiveMemoryWarning() {
@@ -28,17 +32,40 @@ class ViewController: UIViewController {
     @IBAction func onTap(_ sender: Any) {
         view.endEditing(true)
     }
-
+    
     @IBAction func calculateTip(_ sender: AnyObject) {
         
-        let tipPercentages = [0.18, 0.2, 0.25]
-        
         let bill = Double(billField.text!) ?? 0
+        updateTipAndTotal(bill)
+        
+        // Remember billing amount and last access date
+        let userDefaults = UserDefaults.standard
+        userDefaults.setValue(bill, forKey: "PreviousAmount")
+        userDefaults.setValue(Date.timeIntervalSinceReferenceDate, forKey: "LastUpdated")
+        userDefaults.synchronize()
+    }
+    
+    func updateTipAndTotal(_ bill: Double)
+    {
+        let tipPercentages = [0.18, 0.2, 0.25]
+    
         let tip = bill * tipPercentages[tipControl.selectedSegmentIndex]
         let total = bill + tip
-        
-        tipLabel.text = String(format: "$%.2f", tip)
-        totalLabel.text = String(format: "$%.2f", total)
+    
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+    
+        formatter.locale = Locale(identifier: "en_US")
+        tipLabel.text = formatter.string(from: tip as NSNumber)
+    
+        formatter.locale = Locale(identifier: "en_US")
+        totalLabel.text = formatter.string(from: total as NSNumber)
+    
+        formatter.locale = Locale(identifier: "en_UK")
+        britishTotalLabel.text = formatter.string(from: total as NSNumber)
+    
+        formatter.locale = Locale(identifier: "es_ES")
+        euroTotalLabel.text = formatter.string(from: total as NSNumber)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -63,6 +90,26 @@ class ViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        
+        // Animate billing amount and tip percentages
+        self.billField.alpha = 0
+        self.tipControl.alpha = 0
+        UIView.animate(withDuration: 0.2, animations: {
+            self.billField.alpha = 1
+            self.tipControl.alpha = 1
+        })
+        
+        // Load previous billing amount
+        let userDefault = UserDefaults.standard
+        let previousAmount = userDefault.double(forKey: "PreviousAmount")
+        let nowDate = Date.timeIntervalSinceReferenceDate
+        let lastUpdated = userDefault.double(forKey: "LastUpdated")
+        let isValidTime = (nowDate - lastUpdated) < (10*60)
+        if (previousAmount != 0 && isValidTime){
+            billField.text = String(format:"%.0f", previousAmount)
+            updateTipAndTotal(previousAmount)
+        }
+        
     }
     
     override func viewWillDisappear(_ animated: Bool) {
